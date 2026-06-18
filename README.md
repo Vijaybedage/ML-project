@@ -187,7 +187,7 @@ animal-classification/
 **Vijay Bedage**  
 MCA Student — KLE Technological University, Hubli  
 - 🔗 [GitHub](https://github.com/vijaybedage)  
-- 📧 vijaybedage@gmail.com
+- 📧 vijaybedage24@gmail.com
 
 ---
 
