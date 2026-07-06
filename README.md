@@ -139,16 +139,16 @@ This will install:
 
 | Package | Version | Purpose |
 |---|---|---|
-| tensorflow | 2.15.0 | Deep learning framework |
-| numpy | 1.24.3 | Numerical computing |
-| scikit-learn | 1.3.2 | Metrics & evaluation |
-| matplotlib | 3.8.2 | Plotting & visualization |
-| seaborn | 0.13.0 | Statistical visualization |
-| Pillow | 10.1.0 | Image loading & processing |
-| streamlit | 1.29.0 | Web app framework |
-| plotly | 5.18.0 | Interactive charts |
-| jupyter | 1.0.0 | Notebook support |
-| pytest | 7.4.3 | Unit testing |
+| tensorflow | >= 2.15.0 | Deep learning framework |
+| numpy | >= 1.24.3 | Numerical computing |
+| scikit-learn | >= 1.3.2 | Metrics & evaluation |
+| matplotlib | >= 3.8.2 | Plotting & visualization |
+| seaborn | >= 0.13.0 | Statistical visualization |
+| Pillow | >= 10.1.0 | Image loading & processing |
+| streamlit | >= 1.29.0 | Web app framework |
+| plotly | >= 5.18.0 | Interactive charts |
+| jupyter | >= 1.0.0 | Notebook support |
+| pytest | >= 7.4.3 | Unit testing |
 
 > ⏳ **This may take 5–10 minutes** depending on your internet speed (TensorFlow alone is ~500 MB).
 
@@ -492,6 +492,7 @@ All settings are centralized in [`src/config.py`](src/config.py) — change valu
 | 8 | `running scripts is disabled` (Windows PowerShell) | Run: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` |
 | 9 | `Dataset not found` error during training | Verify the dataset is placed at `Animal Classification/dataset/` with 15 named subfolders |
 | 10 | `Permission denied` on Git push | Use a GitHub Personal Access Token instead of a password |
+| 11 | TensorFlow / numpy installation fails on Python 3.13 | The requirements use flexible versioning (`>=`). Upgrade pip (`python -m pip install --upgrade pip`) or use Python 3.10 / 3.11. |
 
 ---
 
@@ -524,7 +525,7 @@ jupyter notebook notebooks/EDA_and_Analysis.ipynb  # EDA
 - ✅ **2-Phase Training** — Phase 1 trains head only, Phase 2 fine-tunes top 30 MobileNetV2 layers
 - ✅ **Proper Logging** — replaced all `print()` with Python `logging` module
 - ✅ **Reproducibility** — added seed control (`SEED=42`) for consistent results
-- ✅ **Pinned Dependencies** — exact versions in `requirements.txt` to avoid compatibility issues
+- ✅ **Flexible Dependencies** — relaxed `requirements.txt` to use `>=` constraints instead of strict `==` to support newer Python versions (such as Python 3.13) and prevent installation errors.
 - ✅ **Unit Tests** — added `tests/test_config.py` with `pytest`
 - ✅ **Better Docstrings** — all functions documented with Args/Returns/Raises
 - ✅ **Input Validation** — predict.py checks if image/model files exist before running
