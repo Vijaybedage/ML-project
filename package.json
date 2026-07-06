@@ -1,0 +1,27 @@
+{
+  "name": "animal_classification_project",
+  "version": "1.0.0",
+  "description": "<div align=\"center\">",
+  "main": "generate_resume.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vijaybedage/ML-project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Vijaybedage/ML-project/issues"
+  },
+  "homepage": "https://github.com/Vijaybedage/ML-project#readme",
+  "dependencies": {
+    "docx": "^9.6.1"
+  }
+}

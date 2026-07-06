@@ -1,6 +1,9 @@
 """
 Animal Classification - Predict on new images
 Author: Vijay Bedage
+
+Usage:
+    python src/predict.py <image_path> [model_path]
 """
 
 import os
@@ -9,41 +12,78 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+import logging
 
-CLASSES = ['Bear', 'Bird', 'Cat', 'Cow', 'Deer', 'Dog', 'Dolphin',
-           'Elephant', 'Giraffe', 'Horse', 'Kangaroo', 'Lion',
-           'Panda', 'Tiger', 'Zebra']
+# Add parent directory for config import when running as script
+sys.path.insert(0, os.path.dirname(__file__))
+from config import CLASSES, ANIMAL_EMOJIS, IMG_SIZE, MODEL_PATH
 
-ANIMAL_EMOJIS = {
-    'Bear': '🐻', 'Bird': '🐦', 'Cat': '🐱', 'Cow': '🐄',
-    'Deer': '🦌', 'Dog': '🐶', 'Dolphin': '🐬', 'Elephant': '🐘',
-    'Giraffe': '🦒', 'Horse': '🐴', 'Kangaroo': '🦘', 'Lion': '🦁',
-    'Panda': '🐼', 'Tiger': '🐯', 'Zebra': '🦓'
-}
+# ─── LOGGING ──────────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s — %(levelname)s — %(message)s',
+    datefmt='%H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
-IMG_SIZE = (224, 224)
 
+def load_model(model_path: str = MODEL_PATH) -> tf.keras.Model:
+    """Load a saved Keras model from disk.
 
-def load_model(model_path: str):
-    """Load saved model."""
+    Args:
+        model_path: Path to the .h5 or SavedModel file.
+
+    Returns:
+        Loaded Keras model.
+
+    Raises:
+        FileNotFoundError: If the model file doesn't exist.
+    """
     if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model not found at {model_path}. Train the model first.")
+        raise FileNotFoundError(
+            f"Model not found at '{model_path}'.\n"
+            f"Train the model first with: python src/train.py"
+        )
     model = tf.keras.models.load_model(model_path)
-    print(f"✅ Model loaded from {model_path}")
+    logger.info(f"Model loaded from {model_path}")
     return model
 
 
 def preprocess_image(image_path: str) -> np.ndarray:
-    """Load and preprocess a single image."""
+    """Load and preprocess a single image for model inference.
+
+    Args:
+        image_path: Path to the image file.
+
+    Returns:
+        Preprocessed numpy array with shape (1, 224, 224, 3), values in [0, 1].
+
+    Raises:
+        FileNotFoundError: If the image file doesn't exist.
+    """
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image not found: '{image_path}'")
+
     img = Image.open(image_path).convert('RGB')
     img = img.resize(IMG_SIZE)
     arr = np.array(img) / 255.0
     return np.expand_dims(arr, axis=0)
 
 
-def predict(model, image_path: str) -> dict:
-    """Predict the animal class for a given image."""
+def predict(model: tf.keras.Model, image_path: str) -> dict:
+    """Predict the animal class for a given image.
+
+    Args:
+        model: Loaded Keras model.
+        image_path: Path to the image file.
+
+    Returns:
+        Dictionary with keys:
+            - predicted_class (str): Top predicted class name.
+            - confidence (float): Confidence score for the top prediction.
+            - top3 (list[dict]): Top 3 predictions with class and confidence.
+            - all_probabilities (dict): All class probabilities.
+    """
     arr = preprocess_image(image_path)
     probs = model.predict(arr, verbose=0)[0]
     top3_idx = np.argsort(probs)[::-1][:3]
@@ -60,7 +100,13 @@ def predict(model, image_path: str) -> dict:
 
 
 def visualize_prediction(image_path: str, result: dict, save_path: str = None):
-    """Display image with prediction overlay."""
+    """Display image with prediction overlay and top-3 bar chart.
+
+    Args:
+        image_path: Path to the original image.
+        result: Prediction result dictionary from predict().
+        save_path: Optional path to save the visualization. Shows plot if None.
+    """
     img = Image.open(image_path).convert('RGB')
     label = result['predicted_class']
     conf = result['confidence']
@@ -91,7 +137,7 @@ def visualize_prediction(image_path: str, result: dict, save_path: str = None):
     plt.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=150, bbox_inches='tight')
-        print(f"✅ Prediction visualization saved to {save_path}")
+        logger.info(f"Prediction visualization saved to {save_path}")
     else:
         plt.show()
     plt.close()
@@ -99,11 +145,11 @@ def visualize_prediction(image_path: str, result: dict, save_path: str = None):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: python predict.py <image_path> [model_path]")
+        print("Usage: python src/predict.py <image_path> [model_path]")
         sys.exit(1)
 
     image_path = sys.argv[1]
-    model_path = sys.argv[2] if len(sys.argv) > 2 else 'models/animal_classifier.h5'
+    model_path = sys.argv[2] if len(sys.argv) > 2 else MODEL_PATH
 
     model = load_model(model_path)
     result = predict(model, image_path)

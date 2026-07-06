@@ -15,7 +15,7 @@
 
 ## 📌 Project Overview
 
-This project uses **Transfer Learning** with **MobileNetV2** (pretrained on ImageNet) to classify images into 15 different animal categories. It includes a full training pipeline, prediction script, and an interactive **Streamlit web app** for real-time inference.
+This project uses **Transfer Learning** with **MobileNetV2** (pretrained on ImageNet) to classify images into 15 different animal categories. It features a **two-phase training pipeline** (frozen base → fine-tuning), prediction script, and an interactive **Streamlit web app** for real-time inference.
 
 ---
 
@@ -46,7 +46,7 @@ This project uses **Transfer Learning** with **MobileNetV2** (pretrained on Imag
 ```
 Input (224×224×3)
     ↓
-MobileNetV2 (pretrained on ImageNet, frozen)
+MobileNetV2 (pretrained on ImageNet, Phase 1: frozen → Phase 2: top 30 layers fine-tuned)
     ↓
 GlobalAveragePooling2D
     ↓
@@ -71,8 +71,8 @@ Dense(15, Softmax)  ← Output
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/vijaybedage/animal-classification.git
-cd animal-classification
+git clone https://github.com/Vijaybedage/ML-project.git
+cd ML-project
 ```
 
 ### 2. Install Dependencies

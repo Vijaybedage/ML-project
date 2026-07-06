@@ -48,3 +48,9 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Node
+node_modules/
+
+# Project helper scripts (personal)
+GITHUB_PUSH_GUIDE.sh
