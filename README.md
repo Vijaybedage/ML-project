@@ -61,6 +61,60 @@ Before you start, make sure the following tools are installed on your computer.
 
 ---
 
+### ⚠️ Fix: "python is not recognized" — PATH Setup Guide
+
+If you see this error when running `python --version`:
+
+```
+python: The term 'python' is not recognized as a name of a cmdlet, function,
+script file, or executable program.
+```
+
+**Why this happens:** Python is installed on your computer, but Windows doesn't know where to find `python.exe`. The Python installation folder was never added to the **PATH environment variable** — which is like an address book Windows uses to locate programs.
+
+#### Fix Option A: Reinstall Python (Easiest)
+
+1. Download Python from [python.org/downloads](https://www.python.org/downloads/)
+2. Run the installer
+3. ✅ **Check "Add python.exe to PATH"** on the very first screen
+4. Click "Install Now"
+5. **Close and reopen** your terminal → try `python --version` again
+
+#### Fix Option B: Add PATH Manually via GUI
+
+1. Press `Win + S` → type **"Edit environment variables for your account"** → open it
+2. Under **User variables**, select **`Path`** → click **"Edit"**
+3. Click **"New"** → add your Python path:
+   ```
+   C:\Users\YOUR_USERNAME\AppData\Local\Programs\Python\Python313
+   ```
+4. Click **"New"** again → add the Scripts path:
+   ```
+   C:\Users\YOUR_USERNAME\AppData\Local\Programs\Python\Python313\Scripts
+   ```
+5. Click **OK** → **OK**
+6. **Close and reopen** your terminal
+
+> 💡 Replace `YOUR_USERNAME` with your actual Windows username and `Python313` with your installed version.
+
+> ⚠️ **"Environment variable is too large" error?** If you get the message *"This environment variable is too large. This dialog allows setting values up to 2047 characters long"*, you're using the old System Properties dialog. Instead, use **"Edit environment variables for your account"** (search it from Start menu) — this newer dialog shows paths as a list and has **no character limit**.
+
+#### Fix Option C: Add PATH via PowerShell Command
+
+Open PowerShell and paste this (replace `YOUR_USERNAME` with your actual username):
+
+```powershell
+$pythonPath = "C:\Users\YOUR_USERNAME\AppData\Local\Programs\Python\Python313"
+$scriptsPath = "$pythonPath\Scripts"
+$currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+[Environment]::SetEnvironmentVariable("Path", "$pythonPath;$scriptsPath;$currentPath", "User")
+Write-Host "Done! Now close this terminal and open a new one."
+```
+
+> ⚠️ **IMPORTANT:** After **any** PATH change (Option A, B, or C), you **MUST close and reopen your terminal**. The current terminal session still has the old PATH loaded in memory. Changes only take effect in a new terminal session.
+
+---
+
 ### Step 2: Clone the Repository 📥
 
 Open a terminal (PowerShell on Windows, Terminal on Mac/Linux) and run:
