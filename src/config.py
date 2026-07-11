@@ -28,7 +28,7 @@ SEED = 42
 CLASSES = [
     'Bear', 'Bird', 'Cat', 'Cow', 'Deer', 'Dog', 'Dolphin',
     'Elephant', 'Giraffe', 'Horse', 'Kangaroo', 'Lion',
-    'Panda', 'Tiger', 'Zebra'
+    'Not_Animal', 'Panda', 'Tiger', 'Zebra'
 ]
 
 NUM_CLASSES = len(CLASSES)
@@ -38,7 +38,7 @@ ANIMAL_EMOJIS = {
     'Bear': '🐻', 'Bird': '🐦', 'Cat': '🐱', 'Cow': '🐄',
     'Deer': '🦌', 'Dog': '🐶', 'Dolphin': '🐬', 'Elephant': '🐘',
     'Giraffe': '🦒', 'Horse': '🐴', 'Kangaroo': '🦘', 'Lion': '🦁',
-    'Panda': '🐼', 'Tiger': '🐯', 'Zebra': '🦓'
+    'Not_Animal': '🚫', 'Panda': '🐼', 'Tiger': '🐯', 'Zebra': '🦓'
 }
 
 # ─── FUN FACTS ────────────────────────────────────────────────────────────────
@@ -55,6 +55,7 @@ ANIMAL_FACTS = {
     'Horse': 'Horses can sleep both standing up and lying down.',
     'Kangaroo': 'Kangaroos can\'t walk backwards.',
     'Lion': 'A lion\'s roar can be heard from 5 miles away.',
+    'Not_Animal': 'This image is not one of our 15 recognized animal species.',
     'Panda': 'Giant pandas eat up to 38 pounds of bamboo a day.',
     'Tiger': 'No two tigers have the same stripe pattern.',
     'Zebra': 'Zebra stripes act as a natural bug repellent.'

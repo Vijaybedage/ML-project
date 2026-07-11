@@ -8,11 +8,17 @@ Usage:
 
 import os
 import sys
+import io
 import numpy as np
 from PIL import Image
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import logging
+
+# Fix Windows terminal emoji encoding
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # Add parent directory for config import when running as script
 sys.path.insert(0, os.path.dirname(__file__))
@@ -86,16 +92,21 @@ def predict(model: tf.keras.Model, image_path: str) -> dict:
     """
     arr = preprocess_image(image_path)
     probs = model.predict(arr, verbose=0)[0]
+
+    # Use model's actual output size (may differ from config if model is older)
+    num_model_classes = probs.shape[0]
+    model_classes = CLASSES[:num_model_classes]
+
     top3_idx = np.argsort(probs)[::-1][:3]
 
     return {
-        'predicted_class': CLASSES[top3_idx[0]],
+        'predicted_class': model_classes[top3_idx[0]],
         'confidence': float(probs[top3_idx[0]]),
         'top3': [
-            {'class': CLASSES[i], 'confidence': float(probs[i])}
+            {'class': model_classes[i], 'confidence': float(probs[i])}
             for i in top3_idx
         ],
-        'all_probabilities': {CLASSES[i]: float(probs[i]) for i in range(len(CLASSES))}
+        'all_probabilities': {model_classes[i]: float(probs[i]) for i in range(num_model_classes)}
     }
 
 

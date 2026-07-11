@@ -18,7 +18,7 @@ from src.config import (
     CLASSES, ANIMAL_EMOJIS, ANIMAL_FACTS,
     IMG_SIZE, MODEL_PATH
 )
-from src.validator import validate_prediction, format_rejection_message
+from src.validator import validate_prediction, format_rejection_message, ANIMAL_CLASSES
 
 # ─── PAGE CONFIG ──────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -39,21 +39,6 @@ def load_model():
 
 
 # ─── PREDICT ──────────────────────────────────────────────────────────────────
-_FEATURE_EXTRACTOR = None
-
-
-def _get_feature_extractor():
-    """Lazily build and cache the feature extractor for OOD detection."""
-    global _FEATURE_EXTRACTOR
-    if _FEATURE_EXTRACTOR is None:
-        try:
-            from src.ood_detector import build_feature_extractor
-            _FEATURE_EXTRACTOR = build_feature_extractor()
-        except Exception as e:
-            st.warning(f"OOD detection unavailable: {e}")
-    return _FEATURE_EXTRACTOR
-
-
 def predict(model, img: Image.Image):
     """Run inference on a PIL image and return probabilities with validation."""
     try:
@@ -64,16 +49,7 @@ def predict(model, img: Image.Image):
         probs = model.predict(arr, verbose=0)[0]
         top5_idx = np.argsort(probs)[::-1][:5]
         
-        # Try to get features for OOD detection
-        features = None
-        extractor = _get_feature_extractor()
-        if extractor is not None:
-            try:
-                features = extractor.predict(arr, verbose=0)[0]
-            except Exception:
-                pass
-        
-        validation = validate_prediction(probs, image_arr=arr, image_features=features, model=model)
+        validation = validate_prediction(probs)
         return probs, top5_idx, validation
     except Exception as e:
         st.error(f"Error during prediction: {str(e)}")
@@ -105,7 +81,7 @@ st.markdown("""
 
 st.markdown('<p class="big-title">🐾 Animal Classification AI</p>', unsafe_allow_html=True)
 st.markdown("**Upload an animal image and let the AI identify it!**")
-st.markdown("*Built with MobileNetV2 Transfer Learning | 15 Animal Classes | ~93% Validation Accuracy*")
+st.markdown("*Built with MobileNetV2 Transfer Learning | 16 Classes (15 Animals + Not Animal) | TensorFlow & Keras*")
 
 st.divider()
 
@@ -156,33 +132,6 @@ with col2:
                         <pre>{rejection_msg}</pre>
                     </div>
                     """, unsafe_allow_html=True)
-
-                    # Show top-3 bar chart for uncertain predictions
-                    st.subheader("📊 Possible Matches")
-                    top3_idx = np.argsort(probs)[::-1][:3]
-                    top3_classes = [f"{ANIMAL_EMOJIS[CLASSES[i]]} {CLASSES[i]}" for i in top3_idx]
-                    top3_confs = [float(probs[i]) * 100 for i in top3_idx]
-
-                    fig = go.Figure(go.Bar(
-                        x=top3_confs,
-                        y=top3_classes,
-                        orientation='h',
-                        marker=dict(
-                            color=['#f59e0b', '#fbbf24', '#fcd34d'],
-                            showscale=False
-                        ),
-                        text=[f"{c:.1f}%" for c in top3_confs],
-                        textposition='outside'
-                    ))
-                    fig.update_layout(
-                        xaxis_title="Confidence (%)",
-                        xaxis=dict(range=[0, 110]),
-                        height=250,
-                        margin=dict(l=20, r=60, t=20, b=40),
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        paper_bgcolor='rgba(0,0,0,0)'
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
 
                 else:
                     # ── CONFIDENT PREDICTION: Show result ──
@@ -248,7 +197,7 @@ with col2:
         st.markdown('<p class="info-text">👆 Please upload an animal image to get started.</p>', unsafe_allow_html=True)
         st.markdown('<p class="info-text"><strong>🐾 Supported Animals:</strong></p>', unsafe_allow_html=True)
         cols = st.columns(3)
-        for i, animal in enumerate(CLASSES):
+        for i, animal in enumerate(ANIMAL_CLASSES):
             cols[i % 3].markdown(f'<span class="animal-list">{ANIMAL_EMOJIS[animal]} {animal}</span>', unsafe_allow_html=True)
 
 # ─── FOOTER ───────────────────────────────────────────────────────────────────

@@ -20,8 +20,8 @@ class TestClasses:
     def test_num_classes_matches_list(self):
         assert NUM_CLASSES == len(CLASSES)
 
-    def test_exactly_15_classes(self):
-        assert len(CLASSES) == 15
+    def test_exactly_16_classes(self):
+        assert len(CLASSES) == 16
 
     def test_classes_are_sorted(self):
         assert CLASSES == sorted(CLASSES)
@@ -74,7 +74,7 @@ class TestExpectedClasses:
     EXPECTED = {
         'Bear', 'Bird', 'Cat', 'Cow', 'Deer', 'Dog', 'Dolphin',
         'Elephant', 'Giraffe', 'Horse', 'Kangaroo', 'Lion',
-        'Panda', 'Tiger', 'Zebra'
+        'Not_Animal', 'Panda', 'Tiger', 'Zebra'
     }
 
     def test_all_expected_classes_present(self):

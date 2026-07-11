@@ -143,7 +143,7 @@ def compute_class_weights(generator):
         classes=np.unique(y),
         y=y
     )
-    class_weight_dict = dict(enumerate(class_weights))
+    class_weight_dict = {int(cls): float(w) for cls, w in zip(np.unique(y), class_weights)}
     logger.info(f"Class weights: {class_weight_dict}")
     return class_weight_dict
 
@@ -358,8 +358,14 @@ def train_with_mixup(model, train_gen, val_gen, epochs, class_weights, mixup_pro
                 else:
                     x, y = cutmix_data(x, y, alpha=1.0)
             
+            # Compute sample weights from class weights if provided
+            sample_weight = None
+            if class_weights is not None:
+                weight_vector = np.array([class_weights.get(c, 1.0) for c in range(y.shape[1])])
+                sample_weight = np.dot(y, weight_vector)
+            
             # Train step
-            logs = model.train_on_batch(x, y, return_dict=True)
+            logs = model.train_on_batch(x, y, sample_weight=sample_weight, return_dict=True)
             train_losses.append(logs['loss'])
             train_accs.append(logs['accuracy'])
             
