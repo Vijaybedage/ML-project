@@ -155,10 +155,17 @@ if __name__ == '__main__':
     result = predict(model, image_path)
 
     emoji = ANIMAL_EMOJIS.get(result['predicted_class'], '')
-    print(f"\n{emoji} Predicted: {result['predicted_class']}")
-    print(f"   Confidence: {result['confidence']*100:.2f}%")
-    print("\n📊 Top 3 predictions:")
-    for i, t in enumerate(result['top3'], 1):
-        print(f"   {i}. {ANIMAL_EMOJIS.get(t['class'],'')} {t['class']}: {t['confidence']*100:.2f}%")
+    try:
+        print(f"\n{emoji} Predicted: {result['predicted_class']}")
+        print(f"   Confidence: {result['confidence']*100:.2f}%")
+        print("\nTop 3 predictions:")
+        for i, t in enumerate(result['top3'], 1):
+            print(f"   {i}. {ANIMAL_EMOJIS.get(t['class'],'')} {t['class']}: {t['confidence']*100:.2f}%")
+    except UnicodeEncodeError:
+        print(f"\nPredicted: {result['predicted_class']}")
+        print(f"   Confidence: {result['confidence']*100:.2f}%")
+        print("\nTop 3 predictions:")
+        for i, t in enumerate(result['top3'], 1):
+            print(f"   {i}. {t['class']}: {t['confidence']*100:.2f}%")
 
     visualize_prediction(image_path, result)

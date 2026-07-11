@@ -73,7 +73,7 @@ def predict(model, img: Image.Image):
             except Exception:
                 pass
         
-        validation = validate_prediction(probs, image_arr=arr, image_features=features)
+        validation = validate_prediction(probs, image_arr=arr, image_features=features, model=model)
         return probs, top5_idx, validation
     except Exception as e:
         st.error(f"Error during prediction: {str(e)}")
@@ -87,11 +87,16 @@ st.markdown("""
                  background: linear-gradient(90deg, #667eea, #764ba2);
                  -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .result-box { background: #f0f9ff; border-left: 4px solid #667eea;
-                  padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+                  padding: 1rem; border-radius: 8px; margin: 1rem 0; color: #1e3a5f; }
+    .result-box h2, .result-box p { color: #1e3a5f; }
     .fact-box   { background: #fff7ed; border-left: 4px solid #f59e0b;
-                  padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+                  padding: 1rem; border-radius: 8px; margin: 1rem 0; color: #7c4d00; }
+    .fact-box strong { color: #7c4d00; }
     .reject-box { background: #fef2f2; border-left: 4px solid #e74c3c;
-                  padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+                  padding: 1rem; border-radius: 8px; margin: 1rem 0; color: #991b1b; }
+    .reject-box pre { color: #991b1b; background: transparent; border: none; font-family: inherit; font-size: 0.95rem; line-height: 1.6; margin: 0; white-space: pre-wrap; }
+    .info-text { color: #374151; }
+    .animal-list { color: #374151; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -111,6 +116,9 @@ with col1:
         help="Supports JPG, JPEG, PNG formats"
     )
 
+    img = None
+    img = None
+with col2:
     if uploaded_file:
         try:
             img = Image.open(uploaded_file).convert('RGB')
@@ -119,8 +127,7 @@ with col1:
             st.error(f"Could not open image: {str(e)}")
             img = None
 
-with col2:
-    if uploaded_file and img is not None:
+    if img is not None:
         model = load_model()
         if model:
             with st.spinner("Analyzing image..."):
@@ -131,7 +138,7 @@ with col2:
                     rejection_msg = format_rejection_message(validation)
                     st.markdown(f"""
                     <div class="reject-box">
-                        <pre style="margin:0; white-space:pre-wrap; font-family:inherit;">{rejection_msg}</pre>
+                        <pre>{rejection_msg}</pre>
                     </div>
                     """, unsafe_allow_html=True)
                 else:
@@ -192,11 +199,11 @@ with col2:
                     )
                     st.plotly_chart(fig, use_container_width=True)
     else:
-        st.info("👆 Please upload an animal image to get started.")
-        st.markdown("#### 🐾 Supported Animals:")
+        st.markdown('<p class="info-text">👆 Please upload an animal image to get started.</p>', unsafe_allow_html=True)
+        st.markdown('<p class="info-text"><strong>🐾 Supported Animals:</strong></p>', unsafe_allow_html=True)
         cols = st.columns(3)
         for i, animal in enumerate(CLASSES):
-            cols[i % 3].write(f"{ANIMAL_EMOJIS[animal]} {animal}")
+            cols[i % 3].markdown(f'<span class="animal-list">{ANIMAL_EMOJIS[animal]} {animal}</span>', unsafe_allow_html=True)
 
 # ─── FOOTER ───────────────────────────────────────────────────────────────────
 st.divider()

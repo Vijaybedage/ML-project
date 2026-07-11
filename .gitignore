@@ -20,18 +20,19 @@ env/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Model files (large — store separately or use Git LFS)
-models/*.h5
+# Model files (large binary formats — keep .h5 for demo)
 models/*.keras
 models/*.pb
 
-# Dataset (large — do not commit raw images)
-Animal Classification/dataset/
+# Dataset — included in repo for reproducibility
 
 # Results (generated files)
 results/*.png
 results/*.txt
 results/*.json
+
+# Large pickle files (exceed GitHub 100MB limit)
+models/ood_stats.pkl
 
 # IDE
 .vscode/

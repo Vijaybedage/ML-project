@@ -3,7 +3,7 @@ OOD (Out-of-Distribution) Detection for Animal Classification
 Author: Vijay Bedage
 
 Uses feature extractor from trained model to compute Mahalanobis distance
-or other distance metrics to detect out-of-distribution inputs.
+for OOD detection. Precomputes class statistics on training data.
 """
 
 import os
@@ -11,10 +11,10 @@ import sys
 import numpy as np
 import tensorflow as tf
 import logging
+import pickle
 
-# Add parent directory for config import
 sys.path.insert(0, os.path.dirname(__file__))
-from config import MODEL_PATH, IMG_SIZE, CLASSES
+from config import MODEL_PATH, IMG_SIZE, CLASSES, DATASET_PATH, BATCH_SIZE, SEED
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,13 +23,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 # Global feature extractor and statistics
 _FEATURE_EXTRACTOR = None
 _CLASS_MEANS = None
 _CLASS_COV_INV = None
 _GLOBAL_MEAN = None
 _GLOBAL_COV_INV = None
+_STATS_PATH = os.path.join(os.path.dirname(MODEL_PATH), 'ood_stats.pkl')
 
 
 def build_feature_extractor(model_path: str = MODEL_PATH):
@@ -48,9 +48,9 @@ def build_feature_extractor(model_path: str = MODEL_PATH):
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model not found at {model_path}")
     
-    model = tf.keras.models.load_model(model_path)
+    model = tf.keras.models.load_model(model_path, compile=False)
     
-    # Find the GlobalAveragePooling2D layer (feature layer before classification head)
+    # Find the GlobalAveragePooling2D layer
     feature_layer = None
     for layer in model.layers:
         if isinstance(layer, tf.keras.layers.GlobalAveragePooling2D):
@@ -61,7 +61,6 @@ def build_feature_extractor(model_path: str = MODEL_PATH):
         # Fallback: use the layer before the final Dense layer
         for i, layer in enumerate(model.layers):
             if isinstance(layer, tf.keras.layers.Dense) and layer.units == len(CLASSES):
-                # The layer before this should be our feature layer
                 if i > 0:
                     feature_layer = model.layers[i - 1]
                 break
@@ -99,15 +98,14 @@ def compute_class_statistics(feature_extractor, dataset_path, batch_size=32):
     Returns:
         Tuple of (class_means, class_cov_inv, global_mean, global_cov_inv)
     """
-    from config import DATASET_PATH, BATCH_SIZE, SEED
     from tensorflow.keras.preprocessing.image import ImageDataGenerator
     
     datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
     
     train_gen = datagen.flow_from_directory(
-        DATASET_PATH,
+        dataset_path,
         target_size=IMG_SIZE,
-        batch_size=BATCH_SIZE,
+        batch_size=batch_size,
         class_mode='categorical',
         subset='training',
         shuffle=False,
@@ -127,7 +125,7 @@ def compute_class_statistics(feature_extractor, dataset_path, batch_size=32):
         all_labels.append(batch_y)
         
         if (i + 1) % 10 == 0:
-            logger.info(f"  Processed {(i + 1) * BATCH_SIZE} samples...")
+            logger.info(f"  Processed {(i + 1) * batch_size} samples...")
     
     all_features = np.vstack(all_features)
     all_labels = np.vstack(all_labels)
@@ -155,7 +153,7 @@ def compute_class_statistics(feature_extractor, dataset_path, batch_size=32):
         class_means[class_idx] = mean
         class_cov_inv[class_idx] = cov_inv
     
-    # Global statistics
+    # Global statistics (fallback)
     global_mean = np.mean(all_features, axis=0)
     global_cov = np.cov(all_features, rowvar=False)
     global_cov_reg = global_cov + 1e-4 * np.eye(global_cov.shape[0])
@@ -172,6 +170,7 @@ def compute_class_statistics(feature_extractor, dataset_path, batch_size=32):
 def initialize_ood_detector(model_path: str = MODEL_PATH, dataset_path: str = None):
     """
     Initialize OOD detector by building feature extractor and computing statistics.
+    Results are cached to disk for fast loading.
     
     Args:
         model_path: Path to trained model.
@@ -181,24 +180,52 @@ def initialize_ood_detector(model_path: str = MODEL_PATH, dataset_path: str = No
     
     logger.info("Initializing OOD detector...")
     
-    feature_extractor = get_feature_extractor(model_path)
+    # Check if cached stats exist
+    if os.path.exists(_STATS_PATH):
+        try:
+            with open(_STATS_PATH, 'rb') as f:
+                stats = pickle.load(f)
+            _CLASS_MEANS = stats['class_means']
+            _CLASS_COV_INV = stats['class_cov_inv']
+            _GLOBAL_MEAN = stats['global_mean']
+            _GLOBAL_COV_INV = stats['global_cov_inv']
+            logger.info("Loaded cached OOD statistics.")
+            return
+        except Exception as e:
+            logger.warning(f"Could not load cached stats: {e}")
     
     if dataset_path is None:
-        from config import DATASET_PATH
         dataset_path = DATASET_PATH
     
     if not os.path.exists(dataset_path):
         logger.warning(f"Dataset not found at {dataset_path}. OOD detection will use global stats only.")
+        # Create dummy stats
+        feat_ext = get_feature_extractor(model_path)
+        feat_dim = feat_ext.output_shape[-1]
         _CLASS_MEANS = {}
         _CLASS_COV_INV = {}
-        _GLOBAL_MEAN = np.zeros(feature_extractor.output_shape[-1])
-        _GLOBAL_COV_INV = np.eye(feature_extractor.output_shape[-1])
+        _GLOBAL_MEAN = np.zeros(feat_dim)
+        _GLOBAL_COV_INV = np.eye(feat_dim)
         return
+    
+    feature_extractor = get_feature_extractor(model_path)
     
     _CLASS_MEANS, _CLASS_COV_INV, _GLOBAL_MEAN, _GLOBAL_COV_INV = \
         compute_class_statistics(feature_extractor, dataset_path)
     
-    logger.info("OOD detector initialized.")
+    # Cache statistics
+    try:
+        stats = {
+            'class_means': _CLASS_MEANS,
+            'class_cov_inv': _CLASS_COV_INV,
+            'global_mean': _GLOBAL_MEAN,
+            'global_cov_inv': _GLOBAL_COV_INV
+        }
+        with open(_STATS_PATH, 'wb') as f:
+            pickle.dump(stats, f)
+        logger.info(f"Cached OOD statistics to {_STATS_PATH}")
+    except Exception as e:
+        logger.warning(f"Could not cache OOD stats: {e}")
 
 
 def mahalanobis_distance(x, mean, cov_inv):
