@@ -95,6 +95,9 @@ st.markdown("""
     .reject-box { background: #fef2f2; border-left: 4px solid #e74c3c;
                   padding: 1rem; border-radius: 8px; margin: 1rem 0; color: #991b1b; }
     .reject-box pre { color: #991b1b; background: transparent; border: none; font-family: inherit; font-size: 0.95rem; line-height: 1.6; margin: 0; white-space: pre-wrap; }
+    .uncertain-box { background: #fffbeb; border-left: 4px solid #f59e0b;
+                     padding: 1rem; border-radius: 8px; margin: 1rem 0; color: #92400e; }
+    .uncertain-box pre { color: #92400e; background: transparent; border: none; font-family: inherit; font-size: 0.95rem; line-height: 1.6; margin: 0; white-space: pre-wrap; }
     .info-text { color: #374151; }
     .animal-list { color: #374151; }
 </style>
@@ -134,14 +137,55 @@ with col2:
                 probs, top5_idx, validation = predict(model, img)
 
             if probs is not None and validation is not None:
-                if not validation['is_valid']:
+                rejection_type = validation.get('rejection_type')
+
+                if not validation['is_valid'] and rejection_type == 'not_animal':
+                    # ── NOT AN ANIMAL: Clean rejection, no predictions ──
                     rejection_msg = format_rejection_message(validation)
                     st.markdown(f"""
                     <div class="reject-box">
                         <pre>{rejection_msg}</pre>
                     </div>
                     """, unsafe_allow_html=True)
+
+                elif not validation['is_valid'] and rejection_type == 'uncertain':
+                    # ── UNCERTAIN: Show possibilities with orange styling ──
+                    rejection_msg = format_rejection_message(validation)
+                    st.markdown(f"""
+                    <div class="uncertain-box">
+                        <pre>{rejection_msg}</pre>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    # Show top-3 bar chart for uncertain predictions
+                    st.subheader("📊 Possible Matches")
+                    top3_idx = np.argsort(probs)[::-1][:3]
+                    top3_classes = [f"{ANIMAL_EMOJIS[CLASSES[i]]} {CLASSES[i]}" for i in top3_idx]
+                    top3_confs = [float(probs[i]) * 100 for i in top3_idx]
+
+                    fig = go.Figure(go.Bar(
+                        x=top3_confs,
+                        y=top3_classes,
+                        orientation='h',
+                        marker=dict(
+                            color=['#f59e0b', '#fbbf24', '#fcd34d'],
+                            showscale=False
+                        ),
+                        text=[f"{c:.1f}%" for c in top3_confs],
+                        textposition='outside'
+                    ))
+                    fig.update_layout(
+                        xaxis_title="Confidence (%)",
+                        xaxis=dict(range=[0, 110]),
+                        height=250,
+                        margin=dict(l=20, r=60, t=20, b=40),
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        paper_bgcolor='rgba(0,0,0,0)'
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
                 else:
+                    # ── CONFIDENT PREDICTION: Show result ──
                     predicted_class = CLASSES[top5_idx[0]]
                     confidence = probs[top5_idx[0]]
                     emoji = ANIMAL_EMOJIS[predicted_class]
@@ -165,6 +209,8 @@ with col2:
 
                     # Validation details (expandable)
                     with st.expander("🔍 Validation Details"):
+                        tier = validation.get('tier', '?')
+                        st.write(f"**Validation Tier:** {tier}")
                         st.write(f"**Top-1:** {validation['top1_class']} ({validation['confidence']*100:.1f}%)")
                         st.write(f"**Top-2:** {validation['top2_class']} ({validation.get('top2_prob', 0)*100:.1f}%)")
                         st.write(f"**Margin:** {validation['margin']*100:.1f}%")
